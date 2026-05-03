@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FEM Data Dashboard</title>
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="sidebar-top">
+        <div class="sidebar-logo">
+            <h1>🌿 Pentland Brands</h1>
+            <span>Higg FEM Data Dashboard</span>
+        </div>
+        <div class="nav-item active" id="nav-overview" onclick="navigateTo('overview')">
+            <span class="icon">📊</span><span>Overview</span>
+        </div>
+        <div style="margin-top:8px;">
+            <div class="nav-item" id="nav-performance" onclick="togglePerformance()">
+                <span class="icon">🏭</span><span>Factory Performance</span><span class="arrow">▶</span>
+            </div>
+            <div id="performance-submenu" style="display:none;">
+                <div class="nav-sub-item" id="nav-overall" onclick="navigateTo('overall')">Overall</div>
+                <div class="nav-sub-item" id="nav-energy" onclick="navigateTo('energy')">⚡ Energy</div>
+                <div class="nav-sub-item" id="nav-waste" onclick="navigateTo('waste')">🗑️ Waste</div>
+                <div class="nav-sub-item" id="nav-water" onclick="navigateTo('water')">💧 Water</div>
+                <div class="nav-sub-item" id="nav-chemical" onclick="navigateTo('chemical')">🧪 Chemical</div>
+                <div class="nav-sub-item" id="nav-air" onclick="navigateTo('air')">💨 Air Emissions</div>
+            </div>
+        </div>
+        <div class="nav-item" id="nav-prescreening" onclick="navigateTo('prescreening')" style="margin-top:8px;">
+            <span class="icon">🔍</span><span>Data Pre-screening</span>
+        </div>
+    </div>
+    <div class="sidebar-bottom">
+        <button class="upload-btn" onclick="document.getElementById('csvUploadInput').click()">📂 Upload Data Files</button>
+        <input type="file" id="csvUploadInput" multiple accept=".csv,.xlsx" style="display:none;" onchange="handleFileUpload(event)">
+        <div class="upload-status" id="uploadStatus"></div>
+    </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+    <div class="global-search-bar">
+        <div class="global-search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="globalSearchInput" placeholder="Search factory by name or Higg ID..."
+                oninput="onGlobalSearch(this.value)" onfocus="showGlobalDropdown()" autocomplete="off">
+            <div class="search-dropdown" id="globalDropdown"></div>
+        </div>
+        <div class="selected-factory-pill" id="selectedFactoryPill">
+            <span id="pillFactoryName">—</span>
+            <span class="clear-btn" onclick="clearFactory()">✕</span>
+        </div>
+    </div>
+
+    <div class="pages-wrap">
+
+        <!-- Overview -->
+        <div class="page active" id="page-overview">
+            <div class="page-title">📊 Overview</div>
+            <div class="page-subtitle">Factory directory and FEM assessment overview</div>
+
+            <div class="upload-prompt" id="uploadPrompt">
+                <div class="icon">📂</div>
+                <strong>No data loaded yet</strong>
+                <p>Click <b>"Upload Data Files"</b> on the bottom left to load your CSV files.</p>
+            </div>
+
+            <div class="overview-directory-section" id="overviewDirectorySection" style="display:none;">
+                <div class="overview-filter-title">Factory Directory</div>
+
+                <div class="overview-filter-grid">
+                    <div class="overview-filter-field overview-search-field">
+                        <label>Factory Name / Higg ID</label>
+                        <input
+                            type="text"
+                            id="overviewFilterSearch"
+                            placeholder="Search factory name or Higg ID..."
+                            oninput="renderOverviewFactoryDirectory()"
+                        >
+                    </div>
+
+                    <div class="overview-filter-field">
+                        <label>FEM Version</label>
+                        <select id="overviewFilterVersion" onchange="renderOverviewFactoryDirectory()">
+                            <option value="">All FEM Versions</option>
+                        </select>
+                    </div>
+
+                    <div class="overview-filter-field">
+                        <label>Assessment Status</label>
+                        <select id="overviewFilterStatus" onchange="renderOverviewFactoryDirectory()">
+                            <option value="">All Status</option>
+                            <option value="NS">NS</option>
+                            <option value="ASI">ASI</option>
+                            <option value="ASC">ASC</option>
+                            <option value="VRP">VRP</option>
+                            <option value="VRC">VRC</option>
+                            <option value="VRF">VRF</option>
+                            <option value="VRD">VRD</option>
+                            <option value="VRI">VRI</option>
+                            <option value="ASD">ASD</option>
+                        </select>
+                    </div>
+
+                    <div class="overview-filter-field">
+                        <label>Tier</label>
+                        <select id="overviewFilterTier" onchange="renderOverviewFactoryDirectory()">
+                            <option value="">All Tiers</option>
+                            <option value="tier 1">Tier 1</option>
+                            <option value="tier 2">Tier 2</option>
+                            <option value="tier 3">Tier 3</option>
+                            <option value="tier 4">Tier 4</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overview-table-wrap">
+                    <table class="overview-directory-table">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Factory Name</th>
+                                <th>Higg ID</th>
+                                <th>Country</th>
+                                <th>Tier</th>
+                                <th>FEM Version</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="overviewDirectoryTbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overall -->
+        <div class="page" id="page-overall">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">🏭 Overall</div>
+                    <div class="page-subtitle">Factory general information and FEM history</div>
+             </div>
+            <button class="ps-download-btn" onclick="downloadPerformancePdf('overall')">⬇ Download PDF</button>
+        </div>
+
+            <div class="factory-header-card" id="overall-header">
+                <div class="factory-name-title" id="overall-factory-name">—</div>
+                <div class="factory-meta-row">
+                    <div class="meta-item"><div class="meta-label">Group</div><div class="meta-value" id="overall-group">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Higg ID</div><div class="meta-value" id="overall-higgid">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Country</div><div class="meta-value" id="overall-country">—</div></div>
+                </div>
+                <div class="fem-year-tabs" id="overall-year-tabs"></div>
+            </div>
+
+            <div class="overall-grid" id="overall-grid" style="display:none;">
+                <div class="info-section">
+                    <div class="section-title overall-title-general">General Factory Information</div>
+                    <div class="info-row"><div class="info-row-label">Tier</div><div class="info-row-value" id="ov-tier">—</div></div>
+                    <div class="info-row"><div class="info-row-label">Product Category</div><div class="info-row-value" id="ov-sector">—</div></div>
+                    <div class="info-row"><div class="info-row-label">Facility Type</div><div class="info-row-value" id="ov-facility">—</div></div>
+                    <div class="info-row"><div class="info-row-label">No. of Employees</div><div class="info-row-value" id="ov-employees">—</div></div>
+                    <div class="info-row"><div class="info-row-label">No. Operating Days</div><div class="info-row-value" id="ov-opdays">—</div></div>
+                </div>
+
+                <div class="info-section">
+                    <div class="section-title overall-title-history">FEM History</div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Version</th>
+                                <th>Assessment Status</th>
+                                <th>Verifier Body</th>
+                                <th>Overall FEM Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fem-history-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="production-section" id="production-section">
+                <div class="section-title overall-title-production">Production Output</div>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Production Type</th>
+                            <th>Volume</th>
+                            <th>UOM</th>
+                            <th>YoY vs Previous Year</th>
+                        </tr>
+                    </thead>
+                    <tbody id="production-tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="placeholder-card" id="overall-placeholder">
+                <div class="big-icon">🏭</div>
+                <div>Please search and select a factory above to view data.</div>
+            </div>
+        </div>
+
+        <!-- Energy -->
+        <div class="page" id="page-energy">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">⚡ Energy</div>
+                    <div class="page-subtitle">Energy consumption and GHG emissions</div>
+            </div>
+            <button class="ps-download-btn" onclick="downloadPerformancePdf('energy')">⬇ Download PDF</button>
+        </div>
+
+            <div class="factory-header-card" id="energy-header">
+                <div class="factory-name-title" id="energy-factory-name">—</div>
+                <div class="factory-meta-row">
+                    <div class="meta-item"><div class="meta-label">Group</div><div class="meta-value" id="energy-group">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Higg ID</div><div class="meta-value" id="energy-higgid">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Country</div><div class="meta-value" id="energy-country">—</div></div>
+                </div>
+                <div class="fem-year-tabs" id="energy-year-tabs"></div>
+            </div>
+            <div class="placeholder-card" id="energy-placeholder">
+                <div class="big-icon">⚡</div>
+                <div>Please search and select a factory above to view data.</div>
+            </div>
+        </div>
+
+        <!-- Waste -->
+        <div class="page" id="page-waste">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">🗑️ Waste</div>
+                    <div class="page-subtitle">Waste generation and disposal</div>
+            </div>
+            <button class="ps-download-btn" onclick="downloadPerformancePdf('waste')">⬇ Download PDF</button>
+        </div>
+
+            <div class="factory-header-card" id="waste-header">
+                <div class="factory-name-title" id="waste-factory-name">—</div>
+                <div class="factory-meta-row">
+                    <div class="meta-item"><div class="meta-label">Group</div><div class="meta-value" id="waste-group">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Higg ID</div><div class="meta-value" id="waste-higgid">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Country</div><div class="meta-value" id="waste-country">—</div></div>
+                </div>
+                <div class="fem-year-tabs" id="waste-year-tabs"></div>
+            </div>
+            <div class="placeholder-card" id="waste-placeholder">
+                <div class="big-icon">🗑️</div>
+                <div>Please search and select a factory above to view data.</div>
+            </div>
+        </div>
+
+        <!-- Water -->
+        <div class="page" id="page-water">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">💧 Water</div>
+                    <div class="page-subtitle">Water consumption and discharge</div>
+                </div>
+                <button class="ps-download-btn" onclick="downloadPerformancePdf('water')">⬇ Download PDF</button>
+            </div>
+            
+            <div class="factory-header-card" id="water-header">
+                <div class="factory-name-title" id="water-factory-name">—</div>
+                <div class="factory-meta-row">
+                    <div class="meta-item"><div class="meta-label">Group</div><div class="meta-value" id="water-group">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Higg ID</div><div class="meta-value" id="water-higgid">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Country</div><div class="meta-value" id="water-country">—</div></div>
+                </div>
+                <div class="fem-year-tabs" id="water-year-tabs"></div>
+            </div>
+            <div class="placeholder-card" id="water-placeholder">
+                <div class="big-icon">💧</div>
+                <div>Please search and select a factory above to view data.</div>
+            </div>
+        </div>
+
+        <!-- Chemical -->
+        <div class="page" id="page-chemical">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">🧪 Chemical</div>
+                    <div class="page-subtitle">Chemical usage and management</div>
+                </div>
+                <button class="ps-download-btn" onclick="downloadPerformancePdf('chemical')">⬇ Download PDF</button>
+            </div>
+
+            <div class="factory-header-card" id="chemical-header">
+                <div class="factory-name-title" id="chemical-factory-name">—</div>
+                <div class="factory-meta-row">
+                    <div class="meta-item"><div class="meta-label">Group</div><div class="meta-value" id="chemical-group">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Higg ID</div><div class="meta-value" id="chemical-higgid">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Country</div><div class="meta-value" id="chemical-country">—</div></div>
+                </div>
+                <div class="fem-year-tabs" id="chemical-year-tabs"></div>
+            </div>
+            <div class="placeholder-card" id="chemical-placeholder">
+                <div class="big-icon">🧪</div>
+                <div>Please search and select a factory above to view data.</div>
+            </div>
+        </div>
+
+        <!-- Air -->
+        <div class="page" id="page-air">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">💨 Air Emissions</div>
+                    <div class="page-subtitle">Air emissions and pollutants</div>
+                </div>
+                <button class="ps-download-btn" onclick="downloadPerformancePdf('air')">⬇ Download PDF</button>
+            </div>
+            
+            <div class="factory-header-card" id="air-header">
+                <div class="factory-name-title" id="air-factory-name">—</div>
+                <div class="factory-meta-row">
+                    <div class="meta-item"><div class="meta-label">Group</div><div class="meta-value" id="air-group">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Higg ID</div><div class="meta-value" id="air-higgid">—</div></div>
+                    <div class="meta-item"><div class="meta-label">Country</div><div class="meta-value" id="air-country">—</div></div>
+                </div>
+                <div class="fem-year-tabs" id="air-year-tabs"></div>
+            </div>
+            <div class="placeholder-card" id="air-placeholder">
+                <div class="big-icon">💨</div>
+                <div>Please search and select a factory above to view data.</div>
+            </div>
+        </div>
+
+        <!-- Data Pre-screening -->
+        <div class="page" id="page-prescreening">
+            <div class="ps-page-toolbar">
+                <div>
+                    <div class="page-title">🔍 Data Pre-screening</div>
+                    <div class="page-subtitle">Review and pre-screen FEM performance data by factory</div>
+                </div>
+                <button class="ps-download-btn" type="button" onclick="downloadPreScreeningPdf()">
+                    ⬇ Download PDF
+                </button>
+            </div>
+
+            <div class="ps-factory-strip" id="psFactoryStrip">
+                <div class="ps-factory-name" id="psFactoryName">—</div>
+                <div><div class="ps-meta-label">Higg ID</div><div class="ps-meta-value" id="psHiggId">—</div></div>
+                <div><div class="ps-meta-label">Group</div><div class="ps-meta-value" id="psGroup">—</div></div>
+                <div><div class="ps-meta-label">Country</div><div class="ps-meta-value" id="psCountry">—</div></div>
+                <div><div class="ps-meta-label">Sector</div><div class="ps-meta-value" id="psSector">—</div></div>
+            </div>
+
+            <div style="display:none;">
+                <span id="ps-th-y1"></span>
+                <span id="ps-th-y2"></span>
+                <span id="ps-th-y3"></span>
+            </div>
+
+            <div class="ps-table-section" id="psTableSection">
+                <div id="psTableBody"></div>
+            </div>
+
+            <div class="placeholder-card" id="ps-placeholder">
+                <div class="big-icon">🔍</div>
+                <div>Please search and select a factory above to view pre-screening data.</div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- App JS — order matters! -->
+<script src="js/core.js"></script>
+<script src="js/overview.js"></script>
+<script src="js/overall.js"></script>
+<script src="js/energy.js"></script>
+<script src="js/waste.js"></script>
+<script src="js/water.js"></script>
+<script src="js/chemicals.js"></script>
+<script src="js/airemissions.js"></script>
+<script src="js/prescreening.js"></script>
+
+</body>
+</html>
